@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Architecture — APAAR × AICTE Student Data Platform</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232d4bff'/><text x='50' y='68' font-size='54' font-family='sans-serif' font-weight='900' fill='white' text-anchor='middle'>A</text></svg>">
+</head>
+<body class="arch">
+
+<nav class="nav">
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>APAAR × AICTE<small>System Architecture</small></div>
+  </div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="#layers">Layers</a>
+    <a href="#flow">Data flow</a>
+    <a href="#security">Security</a>
+    <a href="/portal.html" class="btn btn-gold btn-sm" style="color:#3a2503">Open Portal →</a>
+  </div>
+</nav>
+
+<main class="arch-main">
+  <div class="eyebrow" style="color:var(--gold-2)">Reference Architecture · v1.0</div>
+  <h1 style="margin-top:14px">APAAR-based Student Data Management<br>&amp; Verification System</h1>
+  <p class="intro">
+    A layered, service-oriented architecture that turns heterogeneous institutional submissions into a single
+    APAAR-keyed national student repository. Every request passes through an authentication edge, a validation
+    pipeline and an immutable audit sink; every published record carries an issuer-signed credential that
+    third parties can verify without trusting the transport.
+  </p>
+
+  <!-- ============ LAYERED ARCHITECTURE ============ -->
+  <section class="arch-block" id="layers">
+    <h3>1 · Layered Architecture</h3>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L6</span><b>Clients / Consumers</b><span>who talks to the platform</span></div>
+      <div class="nodes c4">
+        <div class="node accent-b"><b>Institution Portals</b><span>Registrar / data-cell UI — single &amp; bulk student submission, intake dashboards</span></div>
+        <div class="node accent-b"><b>AICTE Console</b><span>National analytics, anomaly feed, policy reports, audit oversight</span></div>
+        <div class="node accent-g"><b>Verifier Apps</b><span>Employers, regulators, awarding bodies — APAAR lookup + credential check</span></div>
+        <div class="node"><b>Public Quick-Check</b><span>Unauthenticated APAAR format/checksum validation (no PII)</span></div>
+      </div>
+    </div>
+    <div class="arch-connector">↕ HTTPS · JSON</div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L5</span><b>API Edge</b><span>single entry point for every request</span></div>
+      <div class="nodes c4">
+        <div class="node accent-y"><b>Auth Middleware</b><span>Session-token issuance (login/logout), 8-hour TTL, role extraction per request</span></div>
+        <div class="node accent-y"><b>RBAC Guard</b><span>Role × route matrix — AICTE_ADMIN / INSTITUTION / VERIFIER / public</span></div>
+        <div class="node"><b>Institution Scoping</b><span>Query results filtered to the caller's institution_id before serialization</span></div>
+        <div class="node"><b>Audit Interceptor</b><span>Every mutating or verifying action appends an immutable audit event</span></div>
+      </div>
+    </div>
+    <div class="arch-connector">↕</div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L4</span><b>Domain Services</b><span>the platform's behaviour</span></div>
+      <div class="nodes c3">
+        <div class="node accent-b"><b>Student Service</b>
+          <span>Upsert single record · bulk batch accept/reject with per-row findings · search with pagination &amp; filters · consent grant/revoke</span></div>
+        <div class="node accent-b"><b>Verification Service</b>
+          <span>Authorized record retrieval by APAAR ID · role-scoped PII exposure · HMAC-SHA256 credential signing · signature re-validation on read</span></div>
+        <div class="node accent-b"><b>Analytics Service</b>
+          <span>KPI aggregation · intake utilisation · category/seat/state distributions · institution league table · anomaly grouping</span></div>
+        <div class="node accent-g"><b>Report Service</b>
+          <span>Enrolment CSV · full-records CSV · governance indicators for accreditation &amp; policy review</span></div>
+        <div class="node accent-y"><b>Institution Service</b>
+          <span>Approved-institution directory · programme master with sanctioned intake, supernumerary, NRI/OCI/FN caps</span></div>
+        <div class="node accent-y"><b>Audit Service</b>
+          <span>Append-only event log (login, upload, verify, consent, export) with actor, role, scope and UTC timestamp</span></div>
+      </div>
+    </div>
+    <div class="arch-connector">↕</div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L3</span><b>Validation &amp; Anomaly Engine</b><span>runs on every write, sweepable repository-wide</span></div>
+      <div class="nodes c4">
+        <div class="node accent-r"><b>APAAR-001/002</b><span>12-digit format · Luhn check digit · admission-year coherence</span></div>
+        <div class="node accent-r"><b>DUP-001 / DUP-002</b><span>Duplicate APAAR inside institution · same APAAR enrolled at another institution</span></div>
+        <div class="node accent-r"><b>INTAKE-001/002/003</b><span>Enrolment vs approved intake + supernumerary headroom · NRI/OCI/FN quota caps</span></div>
+        <div class="node accent-r"><b>DATA-001/002 · ENR-001</b><span>Mandatory fields · nationality/seat-type conflicts · DOB sanity · duplicate enrolment no.</span></div>
+        <div class="node accent-g"><b>Hash Index Builder</b><span>O(n) index by APAAR + enrolment key → full-repository sweep ≈10 ms @1.6k records</span></div>
+        <div class="node accent-g"><b>Severity Resolver</b><span>error = blocks commit (override audited) · warning = flagged for review</span></div>
+        <div class="node"><b>Rule Registry</b><span>11 rules, code-tagged, counts surfaced on dashboards as "rule coverage"</span></div>
+        <div class="node"><b>Issue Store</b><span>Persisted findings — feeds anomaly feed, badges and validation center</span></div>
+      </div>
+    </div>
+    <div class="arch-connector">↕</div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L2</span><b>Persistence</b><span>where records live</span></div>
+      <div class="nodes c4">
+        <div class="node accent-b"><b>Student Master</b><span>APAAR-keyed student records + consent state — the national repository</span></div>
+        <div class="node"><b>Institution Directory</b><span>Approved institutions, state/city, institution codes &amp; API keys</span></div>
+        <div class="node"><b>Programme Master</b><span>Programmes with approved intake, supernumerary, NRI, OCI/FN caps</span></div>
+        <div class="node accent-y"><b>Append-only Audit Log</b><span>Capped rolling window, actor + action + detail + UTC ts</span></div>
+        <div class="node"><b>User &amp; Role Store</b><span>Credential records mapped to RBAC roles and institution scope</span></div>
+        <div class="node accent-g"><b>HMAC Signing Key</b><span>Issuer secret for credential signatures — server-side only, never exposed</span></div>
+        <div class="node"><b>Session Store</b><span>Token → user + expiry; logout invalidates immediately</span></div>
+        <div class="node"><b>Schema Notes</b><span>JSON document store in demo · PostgreSQL tables in production (see mapping)</span></div>
+      </div>
+    </div>
+    <div class="arch-connector">↕</div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="n">L1</span><b>External Integrations</b><span>the national ecosystem around the platform</span></div>
+      <div class="nodes c4">
+        <div class="node accent-g"><b>APAAR / DigiLocker</b><span>Authoritative APAAR issuance &amp; identity resolution (reference integration)</span></div>
+        <div class="node"><b>AICTE Approval MIS</b><span>Approved-institution &amp; sanctioned-intake master feeds</span></div>
+        <div class="node"><b>Institution ERP / SIS</b><span>REST push of post-admission batches using institution API keys</span></div>
+        <div class="node"><b>Degree-Awarding Bodies</b><span>Verify + print APAAR ID alongside enrolment ID on certificates</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DATA FLOW ============ -->
+  <section class="arch-block" id="flow">
+    <h3>2 · End-to-End Data Flow (expected solution pipeline)</h3>
+    <div class="flowchart">
+      <div class="fc"><div class="step">STEP 1</div><b>Institution submits</b><span>POST /api/students · single or bulk</span></div>
+      <div class="fc"><div class="step">STEP 2</div><b>Auth &amp; scope</b><span>token → role → institution filter</span></div>
+      <div class="fc"><div class="step">STEP 3</div><b>APAAR validation</b><span>format · checksum · year · dup indexes</span></div>
+      <div class="fc"><div class="step">STEP 4</div><b>Intake &amp; quota checks</b><span>intake + SN · NRI/OCI/FN caps</span></div>
+      <div class="fc"><div class="step">STEP 5</div><b>Commit + audit</b><span>upsert to master · audit event</span></div>
+      <div class="fc"><div class="step">STEP 6</div><b>Analytics refresh</b><span>KPIs · charts · anomaly feed</span></div>
+      <div class="fc"><div class="step">STEP 7</div><b>Authorized verify</b><span>signed VC + receipt back to stakeholder</span></div>
+    </div>
+
+    <div class="nodes c3" style="margin-top:18px">
+      <div class="node"><b>Write path (happy)</b><span>validate → <b style="display:inline;color:var(--green-2)">202-style accept</b> → findings returned → issues recomputed → dashboard badges update in real time</span></div>
+      <div class="node accent-r"><b>Write path (rejected)</b><span><b style="display:inline;color:#ff8fa5">HTTP 422</b> with per-rule findings; institution may force-commit — override is audited and remains visible in the anomaly feed</span></div>
+      <div class="node accent-b"><b>Verify path</b><span>POST /api/verify → record + W3C-style VC + HMAC proof → signature re-checked server-side → verification receipt written to audit</span></div>
+    </div>
+  </section>
+
+  <!-- ============ SECURITY ============ -->
+  <section class="arch-block" id="security">
+    <h3>3 · Security, Privacy &amp; Governance Model</h3>
+    <div class="sec-grid">
+      <div class="sec-card"><div class="ic">🔑</div><h4>Authentication</h4>
+        <p>Session tokens (48-hex, 8-hour TTL) issued on credential check; server-side session store supports immediate revocation on logout.</p>
+        <ul><li>POST /api/auth/login · logout</li><li>Token via auth_token / X-Auth-Token header</li><li>401 on expiry → forced re-login</li></ul></div>
+      <div class="sec-card"><div class="ic">🛡</div><h4>Authorization (RBAC)</h4>
+        <p>Every route declares allowed roles; institution callers are additionally row-scoped to their institution_id.</p>
+        <ul><li>AICTE_ADMIN — national scope</li><li>INSTITUTION — own records only</li><li>VERIFIER — academic PII only</li><li>public — format check only, zero PII</li></ul></div>
+      <div class="sec-card"><div class="ic">✒️</div><h4>Verifiable Credentials</h4>
+        <p>Each verified record is wrapped in a W3C-style credential and signed with HMAC-SHA256 over the canonical JSON.</p>
+        <ul><li>proofValue = HMAC(canonical)</li><li>Re-verified on every read</li><li>Issuer DID + key id in proof</li><li>Copyable to external wallets</li></ul></div>
+      <div class="sec-card"><div class="ic">🔒</div><h4>Privacy &amp; Consent</h4>
+        <p>Data-subject consent is captured at upload time and can be revoked later; verifiers never see contact or demographic extras.</p>
+        <ul><li>Consent scope + timestamp stored</li><li>Verifier view = academic fields only</li><li>Public check returns no PII</li></ul></div>
+      <div class="sec-card"><div class="ic">⟲</div><h4>Audit Trail</h4>
+        <p>Append-only log; each event carries actor, role, action, human-readable detail, scope and UTC timestamp.</p>
+        <ul><li>LOGIN · STUDENT_CREATE/UPDATE</li><li>BULK_UPLOAD · VERIFY · CONSENT_UPDATE</li><li>REPORT_EXPORT · scoped per role</li></ul></div>
+      <div class="sec-card"><div class="ic">⚠</div><h4>Integrity Controls</h4>
+        <p>Errors block commits by default; overrides are explicit, deliberate and recorded — never silent.</p>
+        <ul><li>422 with per-rule findings</li><li>force=true → audited override</li><li>10-rule registry, code-tagged</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============ DEPLOYMENT ============ -->
+  <section class="arch-block">
+    <h3>4 · Deployment &amp; Scale-out Path</h3>
+    <div class="nodes c3">
+      <div class="node accent-b"><b>Demo deployment (this build)</b>
+        <span>Ruby WEBrick API + JSON document store + static SPA — zero external dependencies, single process, runs anywhere.</span></div>
+      <div class="node accent-y"><b>Production deployment</b>
+        <span>API tier behind L7 load balancer → stateless app containers → PostgreSQL (student master, row-level security by institution) + Redis sessions + S3 audit archive.</span></div>
+      <div class="node accent-g"><b>Scale &amp; interoperability</b>
+        <span>Horizontal API replicas; async bulk-ingest queue with per-batch validation workers; OpenAPI 3 spec for institutional ERP integration; webhook callbacks for verification events.</span></div>
+    </div>
+    <div class="nodes c2" style="margin-top:14px">
+      <div class="node"><b>Production hardening checklist</b>
+        <span>Argon2id password hashing · mTLS for institution API keys · rate limiting per key · field-level encryption for PII at rest · daily signed snapshots for offline verification · OWASP ASVS L2 review · DPDP Act consent workflows.</span></div>
+      <div class="node"><b>Observability</b>
+        <span>Structured JSON logs with trace id · RED metrics per endpoint · anomaly-rate SLO (alerts on rule-count spikes) · audit-log completeness monitor · nightly APAAR integrity sweep.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ API SURFACE ============ -->
+  <section class="arch-block">
+    <h3>5 · API Surface (integration contract)</h3>
+    <div class="layer">
+      <div class="nodes c2">
+        <div class="node"><b>Auth</b><span>POST /api/auth/login · POST /api/auth/logout · GET /api/me</span></div>
+        <div class="node"><b>Reference data</b><span>GET /api/institutions · GET /api/programmes</span></div>
+        <div class="node"><b>Students</b><span>GET /api/students (q, institution_id, programme_id, status, page, per) · POST /api/students (upsert) · POST /api/students/bulk · POST /api/validate (dry-run)</span></div>
+        <div class="node"><b>Monitoring</b><span>GET /api/dashboard · GET /api/issues · GET /api/audit</span></div>
+        <div class="node accent-g"><b>Verification</b><span>GET /api/verify?apaar_id= (public format check) · POST /api/verify (authorized, signed credential)</span></div>
+        <div class="node"><b>Consent &amp; reports</b><span>POST /api/consent · GET /api/reports/enrolment.csv · GET /api/records.csv</span></div>
+      </div>
+      <div class="card-body small" style="color:#97a1c9;border-top:1px solid rgba(255,255,255,.08);margin-top:14px">
+        Auth: <span class="mono" style="color:var(--gold-2)">auth_token</span> header or query param on every non-public route.
+        Errors are JSON: <span class="mono">{ "error": "…", "findings": [ … ] }</span> — bulk and single uploads return per-row / per-rule findings arrays.
+      </div>
+    </div>
+  </section>
+
+  <div class="flex gap-12" style="margin-top:36px;flex-wrap:wrap">
+    <a href="/portal.html" class="btn btn-gold">Open the portal →</a>
+    <a href="/" class="btn" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff">← Back home</a>
+  </div>
+</main>
+
+<footer class="landing-footer">
+  <div class="inner">
+    <div class="brand" style="font-size:14px"><div class="logo" style="width:32px;height:32px;font-size:14px">A</div>APAAR × AICTE</div>
+    <div>Layered reference architecture · L1–L6 · 11 validation rules · 4 RBAC roles</div>
+    <div><a href="/">Home</a> · <a href="/portal.html">Portal</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

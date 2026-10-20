@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APAAR-based Student Data Management &amp; Verification System — AICTE</title>
+<meta name="description" content="National APAAR-linked student data repository for AICTE-approved institutions: secure uploads, automated validation, real-time dashboards, signed verifiable credentials.">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232d4bff'/><text x='50' y='68' font-size='54' font-family='sans-serif' font-weight='900' fill='white' text-anchor='middle'>A</text></svg>">
+</head>
+<body class="landing">
+
+<nav class="nav">
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>APAAR × AICTE<small>Student Data Platform</small></div>
+  </div>
+  <div class="nav-links">
+    <a href="#pipeline">How it works</a>
+    <a href="#features">Capabilities</a>
+    <a href="/architecture.html">Architecture</a>
+    <a href="/portal.html" class="btn btn-gold btn-sm" style="color:#3a2503">Open Portal →</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow" style="color:var(--gold-2)">National Academic Identity · APAAR</div>
+      <h1 style="margin-top:18px">Every student.<br>One <span class="grad">verifiable</span> academic identity.</h1>
+      <p class="lead">
+        A secure, interoperable platform where AICTE-approved institutions submit student-level data
+        against approved intake — validated in real time against the APAAR index, monitored centrally,
+        and issued as signed, tamper-evident academic credentials.
+      </p>
+      <div class="hero-cta">
+        <a href="/portal.html" class="btn btn-gold btn-lg">Launch the portal →</a>
+        <a href="/architecture.html" class="btn btn-lg" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff">View system architecture</a>
+      </div>
+      <div class="hero-stats">
+        <div class="st"><b>12-d</b><span>APAAR identity</span></div>
+        <div class="st"><b>11</b><span>Validation rules</span></div>
+        <div class="st"><b>4</b><span>Access roles</span></div>
+        <div class="st"><b>HMAC</b><span>Signed credentials</span></div>
+      </div>
+    </div>
+
+    <div class="apaar-card">
+      <div class="chip-strip"><i></i><i></i><i></i></div>
+      <div class="lbl">Academic Permanent Account Number</div>
+      <div class="idnum">12 2024 10042 7</div>
+      <div class="lbl" style="color:#7f8dc0">Student · admitted 2024</div>
+      <div class="row">
+        <div><div class="lbl">Name</div><div class="val">Aarav Sharma</div></div>
+        <div><div class="lbl">Enrolment</div><div class="val mono">127/2024/042</div></div>
+      </div>
+      <div class="row">
+        <div><div class="lbl">Institution</div><div class="val">COEP Technological Univ.</div></div>
+        <div><div class="lbl">Programme</div><div class="val">B.E. CSE</div></div>
+      </div>
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="lbl">Verification</div>
+          <div class="val" style="color:var(--green-2)">✓ Signature valid</div>
+        </div>
+        <div class="qr" id="hero-qr"></div>
+      </div>
+      <div class="seal">AICTE<br>VERIFIED<br>RECORD</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PIPELINE ============ -->
+<section class="pipeline" id="pipeline">
+  <div class="pipeline-inner">
+    <div class="section-head">
+      <div class="eyebrow">Expected solution flow</div>
+      <h2>From admission to national verification — in one pipeline.</h2>
+      <p>Each hop is authenticated, validated and audit-logged. Institutions submit; the platform decides;
+         stakeholders verify.</p>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="ic">🏛</div><b>Institution</b><span>AICTE-approved college submits after admissions close</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">⬆</div><b>Student Data Upload</b><span>Single record or bulk CSV batch via API</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">⛨</div><b>APAAR Validation</b><span>Format, checksum, duplicate &amp; cross-institution checks</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">✓</div><b>Data Verification</b><span>Intake, quota and consistency rules auto-resolve</span></div>
+    </div>
+    <div class="flow" style="margin-top:14px">
+      <div class="step"><div class="ic">⬢</div><b>AICTE Central Repository</b><span>APAAR-keyed national student master</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">▤</div><b>Analytics &amp; Monitoring</b><span>Real-time dashboards, anomaly feeds, reports</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">🔍</div><b>Authorized Verification</b><span>AICTE · institutions · employers · regulators</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="ic">⎙</div><b>Printable Credentials</b><span>APAAR + Enrolment ID on certificates</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="features" id="features">
+  <div class="features-inner">
+    <div class="section-head">
+      <div class="eyebrow">Capabilities</div>
+      <h2>Beyond data collection — intelligent, monitored, verifiable.</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><span class="tag">01</span><div class="ic">⬆</div><h4>Secure Data Submission API</h4>
+        <p>Token-authenticated REST endpoints for single and bulk student records, scoped by institution API identity and role.</p></div>
+      <div class="feat"><span class="tag">02</span><div class="ic">⛨</div><h4>APAAR Validation Engine</h4>
+        <p>12-digit format, Luhn check-digit, admission-year coherence and national duplicate resolution in under 10&nbsp;ms for 10,000+ records.</p></div>
+      <div class="feat"><span class="tag">03</span><div class="ic">⚠</div><h4>Anomaly Detection</h4>
+        <p>11 rules: intra-institution duplicates, cross-institution enrolment, invalid APAAR, intake overflow vs the year's sanctioned seats, quota-cap breaches, inconsistent NRI/OCI/FN data, missing student consent.</p></div>
+      <div class="feat"><span class="tag">04</span><div class="ic">▤</div><h4>Real-time Dashboards</h4>
+        <p>KPI cards, intake-utilisation gauges, category &amp; seat-type breakdowns, state-wise analytics and a live anomaly feed.</p></div>
+      <div class="feat"><span class="tag">05</span><div class="ic">🔍</div><h4>Stakeholder Verification</h4>
+        <p>Employers and regulators verify any APAAR ID; role-scoped PII, hashed receipts, full verification history.</p></div>
+      <div class="feat"><span class="tag">06</span><div class="ic">⬢</div><h4>Verifiable Credentials</h4>
+        <p>W3C-style JSON-LD credential per student, HMAC-SHA256 signed by the issuer — copyable into any wallet, independently verifiable.</p></div>
+      <div class="feat"><span class="tag">07</span><div class="ic">⇄</div><h4>Integration Ready</h4>
+        <p>Plain JSON REST API with per-institution keys — integrates with institutional ERP, AICTE MIS, DigiLocker-style delivery.</p></div>
+      <div class="feat"><span class="tag">08</span><div class="ic">⟲</div><h4>Governance &amp; Audit</h4>
+        <p>RBAC (4 roles), immutable audit trail of logins/uploads/verifications/exports, student consent capture &amp; revocation.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROLES ============ -->
+<section class="roles">
+  <div class="roles-inner">
+    <div class="section-head">
+      <div class="eyebrow">Role-based access</div>
+      <h2>Four audiences. One repository. Least privilege everywhere.</h2>
+    </div>
+    <div class="role-grid">
+      <div class="role"><div class="num">ROLE 01</div><h4>AICTE Central Admin</h4>
+        <p>National oversight of every approved institution.</p>
+        <ul><li>All institutions &amp; records</li><li>Anomaly feed &amp; intake breaches</li><li>Policy reports &amp; CSV exports</li><li>Full audit trail</li></ul></div>
+      <div class="role"><div class="num">ROLE 02</div><h4>Institution User</h4>
+        <p>Data cell / registrar of one approved institution.</p>
+        <ul><li>Upload &amp; update own students</li><li>Programme intake vs enrolment</li><li>Consent management</li><li>Scoped audit log</li></ul></div>
+      <div class="role"><div class="num">ROLE 03</div><h4>Authorized Verifier</h4>
+        <p>Employers, regulators, awarding bodies.</p>
+        <ul><li>Verify any APAAR ID</li><li>Academic fields only (PII masked)</li><li>Signature-validity proof</li><li>Verification receipt logged</li></ul></div>
+      <div class="role"><div class="num">ROLE 04</div><h4>Public (unauthenticated)</h4>
+        <p>Format validation without data exposure.</p>
+        <ul><li>APAAR format &amp; checksum check</li><li>No PII ever returned</li><li>Hint to approach authorized roles</li><li>Rate-safe read-only</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO ACCOUNTS ============ -->
+<section class="accounts">
+  <div class="accounts-inner">
+    <div class="section-head" style="margin:0 auto 0;text-align:center">
+      <div class="eyebrow" style="justify-content:center">Try it now</div>
+      <h2>Sign in with a demo role.</h2>
+      <p>Click a card to jump into the portal pre-filled with that role.</p>
+    </div>
+    <div class="acc-grid">
+      <a class="acc" href="/portal.html#aicte.admin">
+        <b>AICTE Central Admin</b>
+        <div class="u">aicte.admin</div><div class="p">demo123</div>
+        <div class="role-tag">Full national view</div></a>
+      <a class="acc" href="/portal.html#cope.pune">
+        <b>COEP Pune — Registrar</b>
+        <div class="u">cope.pune</div><div class="p">demo123</div>
+        <div class="role-tag">Institution scope</div></a>
+      <a class="acc" href="/portal.html#mit.manipal">
+        <b>MIT Manipal — Data Cell</b>
+        <div class="u">mit.manipal</div><div class="p">demo123</div>
+        <div class="role-tag">Institution scope</div></a>
+      <a class="acc" href="/portal.html#employer.demo">
+        <b>TCS — Campus Hiring</b>
+        <div class="u">employer.demo</div><div class="p">demo123</div>
+        <div class="role-tag">Verifier scope</div></a>
+    </div>
+  </div>
+</section>
+
+<footer class="landing-footer">
+  <div class="inner">
+    <div class="brand" style="font-size:14px"><div class="logo" style="width:32px;height:32px;font-size:14px">A</div>
+      APAAR × AICTE</div>
+    <div>Institution → Upload → APAAR Validation → Verification → Central Repository → Analytics → Authorized Verification</div>
+    <div><a href="/architecture.html">Architecture</a> · <a href="/portal.html">Portal</a></div>
+  </div>
+</footer>
+
+<script>
+  // deterministic pseudo-QR in hero card
+  (function () {
+    var qr = document.getElementById('hero-qr');
+    if (!qr) return;
+    var seed = 202410042;
+    for (var i = 0; i < 81; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      var on = (seed >> 7) % 100 > 42;
+      // corner finder patterns
+      var r = Math.floor(i / 9), c = i % 9;
+      if ((r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3)) on = !((r === 1 || r === 7) && (c === 1 || c === 7) ? false : (r === 1 || r === 7 || c === 1 || c === 7));
+      var el = document.createElement('i');
+      if (!on) el.className = 'off';
+      qr.appendChild(el);
+    }
+  })();
+</script>
+</body>
+</html>

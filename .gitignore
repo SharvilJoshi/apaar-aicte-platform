@@ -1,0 +1,11 @@
+# Runtime data — regenerated deterministically on first boot from lib/store.rb
+data/db.json
+
+# Logs and temp
+*.log
+tmp/
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
