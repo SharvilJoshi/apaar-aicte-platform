@@ -340,6 +340,10 @@ class Store
                     'action' => 'SEED', 'detail' => "Seeded #{students.length} student records across #{institutions.length} institutions",
                     'institution_id' => nil }],
       'issues' => []
-    }.tap { |db| @db = db }
+    }.tap do |db|
+      @db = db
+      persist # write the seed immediately so data/db.json exists after first boot,
+              # matching README — otherwise the file only appears after the first mutation
+    end
   end
 end
