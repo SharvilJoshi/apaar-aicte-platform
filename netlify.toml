@@ -1,0 +1,34 @@
+# Netlify serves this project's static front end.
+#
+# The entry point lives in public/, not the repository root. Without this
+# file Netlify publishes the root, which has no index.html (every path 404s)
+# and would publicly expose server source such as lib/server.rb and
+# README.md — which the current deploy is doing.
+#
+# NOTE: Netlify is static hosting. Login, dashboards and CSV upload call
+# /api/*, which only the Ruby server (server.rb) serves — those routes 404
+# here by design. For a fully working instance, run the server somewhere
+# that executes Ruby (Render, Fly.io, a VM, etc.).
+
+[build]
+  publish = "public"
+  # No build step: plain HTML/CSS/JS.
+  command = ""
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# Friendly short URL for the portal. Deliberately no catch-all fallback:
+# rewriting every unknown path to index.html would turn real 404s (notably
+# /api/*) into HTML responses and hide breakage.
+[[redirects]]
+  from = "/portal"
+  to = "/portal.html"
+  status = 200
