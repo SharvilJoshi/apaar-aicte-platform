@@ -515,15 +515,18 @@
 
       var bulk =
         '<div class="card"><div class="card-head"><h3>Bulk Batch Upload</h3>' +
-        '<button class="btn btn-ghost btn-sm" onclick="App.fillSample()">Fill sample rows</button></div>' +
+        '<div class="flex gap-8"><button class="btn btn-ghost btn-sm" onclick="App.downloadTemplate()">⤓ Template CSV</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="App.fillSample()">Fill sample rows</button></div></div>' +
         '<div class="card-body">' +
         '<div class="dropzone" id="dz"><div class="ic">⬆</div><b>Drop a CSV file here or click to browse</b>' +
         '<span>Columns: apaar_id, name, dob, gender, category, programme_id, enrolment_no, admission_year, admission_date, seat_type, nationality</span></div>' +
-        '<input type="file" id="dz-file" accept=".csv,.json,text/csv" class="hide">' +
+        '<input type="file" id="dz-file" accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values" class="hide">' +
+        '<div id="file-summary"></div>' +
         '<div class="field" style="margin-top:14px"><label>…or paste rows (one JSON object per line, or CSV with header)</label>' +
         '<textarea class="input" id="bulk-text" placeholder=\'{"apaar_id":"122024100427","name":"Aditi Sharma","dob":"2004-04-12","gender":"F","category":"General","programme_id":"PRG-127-1","enrolment_no":"127/2024/401","admission_year":2024,"admission_date":"2024-07-15","seat_type":"Regular","nationality":"Indian"}\'></textarea></div>' +
         '<div class="flex gap-8" style="margin-top:12px"><button class="btn btn-primary" onclick="App.runBulk()">Run validation & upload</button>' +
         '<button class="btn btn-ghost" onclick="App.clearBulk()">Clear</button></div>' +
+        '<div id="bulk-preview" style="margin-top:16px"></div>' +
         '<div id="bulk-result" style="margin-top:16px"></div>' +
         '</div></div>';
 
@@ -553,6 +556,14 @@
         if (e.dataTransfer.files[0]) readBulkFile(e.dataTransfer.files[0]);
       });
       dzFile.addEventListener('change', function () { if (this.files[0]) readBulkFile(this.files[0]); });
+      // Live preview: re-parse as rows are pasted or edited so column and
+      // quoting problems surface *before* the batch is committed.
+      var bulkT;
+      $('#bulk-text').addEventListener('input', function () {
+        clearTimeout(bulkT);
+        bulkT = setTimeout(function () { renderBulkPreview(); }, 220);
+      });
+      renderBulkPreview();
     }).catch(failContent);
   }
 
@@ -615,35 +626,186 @@
     $('#bulk-text').value = SAMPLE_ROWS.map(function (r) { return JSON.stringify(r); }).join('\n');
     toast('Sample loaded', '2 valid rows + 3 crafted anomalies', 'ok');
   };
-  App.clearBulk = function () { $('#bulk-text').value = ''; $('#bulk-result').innerHTML = ''; };
+  App.clearBulk = function () {
+    $('#bulk-text').value = '';
+    $('#bulk-result').innerHTML = '';
+    $('#bulk-preview').innerHTML = '';
+    var fs = $('#file-summary'); if (fs) fs.innerHTML = '';
+    var fi = $('#dz-file'); if (fi) fi.value = '';
+  };
+
+  App.downloadTemplate = function () {
+    var head = ['apaar_id', 'name', 'dob', 'gender', 'category', 'programme_id', 'enrolment_no',
+                'admission_year', 'admission_date', 'seat_type', 'nationality', 'email', 'phone', 'consent'];
+    var sample = ['122024100427', 'Aditi Sharma', '2004-04-12', 'F', 'General', 'PRG-127-1', '127/2024/401',
+                  '2024', '2024-07-15', 'Regular', 'Indian', 'aditi.sharma@college.edu.in', '9876543210', 'yes'];
+    // BOM keeps Excel from mangling the 12-digit APAAR id as a number.
+    var csv = '\uFEFF' + head.join(',') + '\n' + sample.join(',') + '\n';
+    var url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = 'apaar-student-upload-template.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('Template downloaded', 'Fill it in, then drop it on the box above', 'ok');
+  };
 
   function readBulkFile(file) {
     var rd = new FileReader();
-    rd.onload = function () { $('#bulk-text').value = rd.result; toast('File loaded', file.name, 'ok'); };
+    rd.onload = function () {
+      $('#bulk-text').value = rd.result;
+      var n = -1;
+      try { n = recordsFromText(rd.result).length; } catch (e) { n = -1; }
+      renderFileSummary(file, n);
+      renderBulkPreview();
+      toast('File loaded', file.name + (n > 0 ? ' · ' + n + ' row' + (n === 1 ? '' : 's') : ''), 'ok');
+    };
     rd.readAsText(file);
   }
 
-  function parseBulk(text) {
-    text = text.trim();
-    if (!text) return [];
-    if (text[0] === '[') {
-      var j = JSON.parse(text);
+  /* RFC-4180 CSV reader: honours quoted fields, doubled quotes (""),
+     embedded commas/newlines, CRLF, UTF-8 BOM and tab-delimited exports. */
+  function readCsv(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
+    var delim = ',';
+    var firstLine = (text.split(/\r?\n/)[0] || '');
+    if (firstLine.indexOf('\t') > -1 && firstLine.indexOf(',') === -1) delim = '\t';
+    var rows = [], row = [], cell = '', inQ = false, i = 0;
+    while (i < text.length) {
+      var ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        cell += ch; i++; continue;
+      }
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === delim) { row.push(cell); cell = ''; i++; continue; }
+      if (ch === '\r') { i++; continue; }
+      if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; i++; continue; }
+      cell += ch; i++;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    // drop fully-empty trailing rows (common in spreadsheet exports)
+    return rows.filter(function (r) { return r.some(function (c) { return String(c).trim() !== ''; }); });
+  }
+
+  var KNOWN_COLS = ['apaar_id', 'name', 'dob', 'gender', 'category', 'programme_id', 'enrolment_no',
+    'admission_year', 'admission_date', 'seat_type', 'nationality', 'email', 'phone',
+    'oci_card_no', 'passport_no', 'institute_sc_no', 'status', 'consent', 'consent_granted'];
+  var REQUIRED_COLS = ['apaar_id', 'name', 'dob', 'gender', 'category', 'programme_id', 'enrolment_no', 'seat_type'];
+  var CONSENT_TRUE = /^(1|true|yes|y|granted)$/i;
+
+  function recordsFromText(text) {
+    var t = String(text || '').replace(/^\uFEFF/, '').trim();
+    if (!t) return [];
+    if (t[0] === '[') {
+      var j = JSON.parse(t);
       return Array.isArray(j) ? j : (j.records || [j]);
     }
-    var lines = text.split(/\r?\n/).filter(Boolean);
+    var lines = t.split(/\r?\n/).filter(function (l) { return l.trim() !== ''; });
     // JSON-lines: one JSON object per line
     if (lines[0] && lines[0].trim()[0] === '{') {
       return lines.map(function (ln) { return JSON.parse(ln); });
     }
-    // CSV with header
-    var head = lines.shift().split(',').map(function (h) { return h.trim(); });
-    return lines.map(function (ln) {
-      var cells = ln.split(',');
+    var table = readCsv(t);
+    if (!table.length) return [];
+    var head = table.shift().map(function (h) { return String(h).trim(); });
+    return table.map(function (cells) {
       var o = {};
-      head.forEach(function (h, i) { o[h] = (cells[i] || '').trim(); });
-      o.admission_year = parseInt(o.admission_year || (o.admission_date || '').slice(0, 4), 10) || undefined;
+      head.forEach(function (h, i) {
+        if (!h) return;
+        o[h] = cells[i] == null ? '' : String(cells[i]).trim();
+      });
+      // numeric fields must reach the API as numbers, not strings
+      ['admission_year', 'phone'].forEach(function (k) {
+        if (o[k] !== undefined && o[k] !== '') o[k] = /^\d+$/.test(o[k]) ? Number(o[k]) : o[k];
+      });
+      // Consent (requirement 8): spreadsheets record it as yes/true/1. The bulk
+      // endpoint reads consent_granted, so normalise either column name into it
+      // — otherwise every CSV row trips CONSENT-001 on import.
+      var consentRaw = o.consent_granted !== undefined && o.consent_granted !== '' ? o.consent_granted : o.consent;
+      if (consentRaw !== undefined && consentRaw !== '') {
+        o.consent_granted = CONSENT_TRUE.test(String(consentRaw).trim());
+      }
+      delete o.consent;
+      if (o.admission_year === undefined || o.admission_year === '') {
+        var y = parseInt((o.admission_date || '').slice(0, 4), 10);
+        o.admission_year = isNaN(y) ? undefined : y;
+      }
       return o;
     });
+  }
+
+  function parseBulk(text) { return recordsFromText(text); }
+
+  // File chip: name, size, parsed row/column counts, and column health.
+  function renderFileSummary(file, rowCount) {
+    var host = $('#file-summary');
+    if (!host) return;
+    var kb = (file.size / 1024);
+    var head = [], missing = [], unknown = [];
+    try {
+      var t = String($('#bulk-text').value || '').replace(/^\uFEFF/, '').trim();
+      if (t && t[0] !== '[' && t[0] !== '{') {
+        var table = readCsv(t);
+        if (table.length) {
+          head = table.shift().map(function (h) { return String(h).trim(); });
+        }
+      }
+    } catch (e) { /* summary is best-effort */ }
+    if (head.length) {
+      missing = REQUIRED_COLS.filter(function (c) { return head.indexOf(c) < 0; });
+      unknown = head.filter(function (c) { return KNOWN_COLS.indexOf(c) < 0; });
+    }
+    host.innerHTML =
+      '<div class="card" style="margin-top:12px;box-shadow:none"><div class="card-body" style="padding:14px">' +
+      '<div class="flex gap-8 wrap" style="align-items:center">' +
+      '<span class="badge ok">⤒ ' + esc(file.name) + '</span>' +
+      '<span class="badge neutral">' + kb.toFixed(1) + ' KB</span>' +
+      (rowCount >= 0 ? '<span class="badge ok">' + rowCount + ' row' + (rowCount === 1 ? '' : 's') + ' parsed</span>' : '<span class="badge err">Could not parse file</span>') +
+      (head.length ? '<span class="badge neutral">' + head.length + ' columns</span>' : '') +
+      '<button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="App.clearBulk()">Remove</button>' +
+      '</div>' +
+      (missing.length ? '<div class="small" style="margin-top:8px;color:var(--red,#e5484d)"><b>Missing required columns:</b> ' + esc(missing.join(', ')) + '</div>' : '') +
+      (unknown.length ? '<div class="small muted" style="margin-top:6px">Ignored unknown columns: ' + esc(unknown.join(', ')) + '</div>' : '') +
+      '</div></div>';
+  }
+
+  // Parse-on-type preview: first rows + per-row APAAR check, pre-submit.
+  function renderBulkPreview() {
+    var host = $('#bulk-preview');
+    if (!host) return;
+    var raw = String($('#bulk-text').value || '');
+    if (!raw.trim()) { host.innerHTML = ''; return; }
+    var rows;
+    try { rows = parseBulk(raw); }
+    catch (e) {
+      host.innerHTML = '<div class="issue error"><span class="code">PARSE</span><div><div class="msg">' +
+        esc(e.message) + '</div><div class="meta"><span>Use CSV with a header row, one JSON object per line, or a JSON array.</span></div></div></div>';
+      return;
+    }
+    if (!rows.length) { host.innerHTML = ''; return; }
+    var cols = KNOWN_COLS.filter(function (c) { return rows[0][c] !== undefined; });
+    var shown = rows.slice(0, 5);
+    var html =
+      '<div class="card" style="box-shadow:none"><div class="card-head"><h3>Preview — first ' + shown.length + ' of ' + rows.length + ' rows</h3>' +
+      '<span class="badge neutral">not uploaded yet</span></div><div class="card-body" style="padding-top:6px">' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr>' +
+      cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '<th>APAAR check</th></tr></thead><tbody>' +
+      shown.map(function (r) {
+        var id = String(r.apaar_id || '').replace(/\D/g, '');
+        var okId = /^\d{12}$/.test(id);
+        return '<tr>' + cols.map(function (c) {
+          var v = r[c];
+          if (c === 'apaar_id' && v) v = prettyApaar(String(v).replace(/\D/g, '').length === 12 ? String(v).replace(/\D/g, '') : v);
+          return '<td class="small' + (c === 'apaar_id' || c === 'enrolment_no' ? ' mono' : '') + '">' + esc(v === undefined || v === '' ? '—' : v) + '</td>';
+        }).join('') +
+        '<td>' + (okId ? '<span class="badge ok">✓ format</span>' : '<span class="badge err">✕ 12 digits</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="small muted" style="margin-top:10px">Nothing is sent until you press <b>Run validation &amp; upload</b>. Rejected rows are reported per row with the rule code.</div>' +
+      '</div></div>';
+    host.innerHTML = html;
   }
 
   App.runBulk = function () {
