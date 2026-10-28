@@ -363,6 +363,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
    Portal shell
    ========================================================================== */
 .portal { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+.sidebar-scrim { display: none; }
 
 .sidebar {
   background: linear-gradient(180deg, var(--navy) 0%, #0d1730 100%);
@@ -731,6 +732,13 @@ canvas.chart { width: 100%; display: block; }
   .portal { grid-template-columns: 1fr; }
   .sidebar { position: fixed; left: -300px; z-index: 100; width: 280px; transition: left .25s ease; }
   .sidebar.open { left: 0; box-shadow: 0 0 60px rgba(0,0,0,.5); }
+  /* Tap-outside / Escape dismisses the slide-in nav (desktop keeps it static). */
+  .sidebar-scrim {
+    position: fixed; inset: 0; z-index: 99; display: block;
+    background: rgba(5,9,20,.58); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  .sidebar-scrim.on { opacity: 1; pointer-events: auto; }
   .upload-grid, .split, .split-3, .form-grid { grid-template-columns: 1fr; }
   .nodes.c4, .nodes.c3, .nodes.c2 { grid-template-columns: 1fr 1fr; }
   .flowchart { flex-direction: column; }

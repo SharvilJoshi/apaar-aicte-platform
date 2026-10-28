@@ -158,6 +158,11 @@
     audit: ['Audit Trail', 'Immutable log of every login, upload, verification and export']
   };
 
+  function closeMenu() {
+    $('#sidebar').classList.remove('open');
+    var sc = $('#sidebar-scrim'); if (sc) sc.classList.remove('on');
+  }
+
   function go(view) {
     S.view = view;
     $$('#sidebar [data-go]').forEach(function (el) {
@@ -166,7 +171,7 @@
     var t = TITLES[view] || ['', ''];
     $('#page-title').textContent = t[0];
     $('#page-sub').textContent = t[1];
-    $('#sidebar').classList.remove('open');
+    closeMenu();
     var c = $('#content');
     c.innerHTML = '<div class="sk" style="height:120px"></div><div class="sk" style="height:260px"></div><div class="sk" style="height:200px"></div>';
 
@@ -999,7 +1004,15 @@
       e.preventDefault();
       login($('#f-user').value.trim(), $('#f-pass').value);
     });
-    $('#menu-btn').addEventListener('click', function () { $('#sidebar').classList.toggle('open'); });
+    $('#menu-btn').addEventListener('click', function () {
+      var open = $('#sidebar').classList.toggle('open');
+      $('#sidebar-scrim').classList.toggle('on', open);
+    });
+    // Dismiss the slide-in nav by tapping the dimmed backdrop or pressing Escape.
+    $('#sidebar-scrim').addEventListener('click', closeMenu);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeMenu();
+    });
 
     if (S.token && S.user) {
       api('/api/me').then(function (d) { S.user = d.user; enterPortal(); refreshIssuesCache(); })
