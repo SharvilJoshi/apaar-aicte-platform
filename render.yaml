@@ -1,0 +1,41 @@
+# Render blueprint for the APAAR × AICTE platform.
+# https://render.com/docs/blueprint-spec
+#
+# The app is a plain Ruby WEBrick server — no Rails, no Gemfile — so there is
+# nothing to bundle and nothing to compile: the start command is just
+# `ruby server.rb`. lib/server.rb reads PORT from the environment (PaaS
+# convention) and binds BIND_ADDR, which we set to 0.0.0.0 so Render's router
+# can reach it.
+
+services:
+  - type: web
+    name: apaar-aicte-platform
+    runtime: ruby
+    plan: free
+
+    # No Gemfile exists (standard library only), so skip `bundle install`.
+    buildCommand: "echo 'no build step: stdlib-only Ruby'"
+    startCommand: "ruby server.rb"
+
+    envVars:
+      # Render injects PORT itself; only the bind address is ours to declare.
+      - key: BIND_ADDR
+        value: 0.0.0.0
+
+    healthCheckPath: /
+
+    # Persistent disk for data/db.json (uploads + audit trail survive redeploys).
+    # NOT available on the free plan — Render only attaches disks to paid
+    # services (https://render.com/docs/disks). Uncomment on a paid plan and
+    # keep the mount path in sync with Store::DATA_DIR, which resolves to
+    # <repo>/data when the working directory is the repo root:
+    #
+    # disk:
+    #   name: apaar-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
+
+# Free-plan caveat: the service spins down after ~15 minutes without traffic
+# (~1 minute cold start), and without a disk the seeded database is rebuilt on
+# every boot/redeploy — uploads are lost. Both are acceptable for a demo;
+# upgrade or add a disk for anything persistent.

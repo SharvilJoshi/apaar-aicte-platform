@@ -12,7 +12,13 @@ require_relative 'apaar'
 require_relative 'validation'
 
 module AparServer
-  PORT = (ARGV[0] || 8787).to_i
+  # Port resolution order: CLI argument (local habit: `ruby server.rb 8788`),
+  # then PORT from the environment (PaaS platforms such as Render inject it),
+  # then the local default.
+  PORT = (ARGV[0] || ENV['PORT'] || 8787).to_i
+  # PaaS routers reach the app over the container network, so production must
+  # bind 0.0.0.0 (BIND_ADDR=0.0.0.0). Default stays loopback-only for local use.
+  BIND_ADDR = (ENV['BIND_ADDR'] || '127.0.0.1')
   PUBLIC = File.expand_path('../public', __dir__)
   SESSION_TTL = 8 * 3600
 
@@ -239,7 +245,7 @@ module AparServer
   # ==========================================================================
   server = WEBrick::HTTPServer.new(
     Port: PORT,
-    BindAddress: '127.0.0.1',
+    BindAddress: BIND_ADDR,
     AccessLog: [],
     Logger: WEBrick::Log.new($stderr, WEBrick::Log::WARN)
   )
